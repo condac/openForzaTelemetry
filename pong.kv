@@ -1,0 +1,40 @@
+#:kivy 1.0.9
+
+<PongBall>:
+    size: 50, 50
+    canvas:
+        Ellipse:
+            pos: self.pos
+            size: self.size
+
+<PongPaddle>:
+    size: 25, 200
+    canvas:
+        Rectangle:
+            pos:self.pos
+            size:self.size
+<Bar>:
+    size: 25, 200
+    canvas:
+        Rectangle:
+            pos:self.pos
+            size:self.size
+
+<PongGame>:
+    rpmobject: rpm
+
+    canvas:
+        Rectangle:
+            pos: 10, self.center_y
+            size: int(root.value1) / 100, 10
+
+
+    Label:
+        font_size: 70
+        center_x: root.width  / 2
+        top: root.top - 50
+        text: str(root.text1)
+    Bar:
+        id: rpm
+        x: root.x
+        center_y: root.center_y
