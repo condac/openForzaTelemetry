@@ -8,7 +8,9 @@ For the moment you edit gateway.py and add more lines for your devices and chang
 
 ## Android app
 The android app is built with Kivy framework, to build your self run: buildozer android debug deploy run  
-The anrodid app is also runnable on PC see Python program
+Download latest release at https://github.com/condac/openForzaTelemetry/releases  
+
+The anrodid app is also runnable on PC see Python program  
 
 ## Python program
 You should be able to run the sam android app on pc simply run:  
