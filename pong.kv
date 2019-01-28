@@ -14,27 +14,72 @@
             pos:self.pos
             size:self.size
 <Bar>:
-    size: 25, 200
     canvas:
+        Clear
+        Color:
+            rgb: (self.r,self.g,self.b)
         Rectangle:
             pos:self.pos
             size:self.size
 
+<BestGear>:
+    Label:
+        font_size: self.parent.height / 10
+        center_x: root.width  / 2
+        top: (self.parent.height / 10)*10
+        text: "str(self.gear)"
+
 <PongGame>:
     rpmobject: rpm
-
-    canvas:
-        Rectangle:
-            pos: 10, self.center_y
-            size: int(root.value1) / 100, 10
-
+    gearobject: bestg
 
     Label:
-        font_size: 70
+        font_size: (self.parent.height / 10)
         center_x: root.width  / 2
-        top: root.top - 50
+        top: root.top - 0
         text: str(root.text1)
+    Label:
+        font_size: self.parent.height / 20
+        center_x: (self.parent.width  / 20)*1
+        top: (self.parent.height / 10)*10
+        text: str(root.tire_temp_fl)
+    Label:
+        font_size: self.parent.height / 20
+        center_x: (self.parent.width  / 20)*2
+        top: (self.parent.height / 10)*10
+        text: str(root.tire_temp_fr)
+    Label:
+        font_size: self.parent.height / 20
+        center_x: (self.parent.width  / 20)*1
+        top: (self.parent.height / 10)*9
+        text: str(root.tire_temp_rl)
+    Label:
+        font_size: self.parent.height / 20
+        center_x: (self.parent.width  / 20)*2
+        top: (self.parent.height / 10)*9
+        text: str(root.tire_temp_rr)
+
+    Label:
+        font_size: self.parent.height / 20
+        halign:'left'
+        x: (self.parent.width  / 20)*1
+        top: (self.parent.height / 10)*8
+        text: "Fuel "+str(root.fuel)+"%"
+    Label:
+        font_size: self.parent.height / 20
+        halign:'left'
+        x: (self.parent.width  / 20)*1.5
+        top: (self.parent.height / 10)*7
+        text: "DTE "+str(  root.fuel_DTE  )+" Laps"
+
+    Label:
+        font_size: self.parent.height / 5
+        center_x: root.width  / 2
+        top: (self.parent.height / 10)*8
+        text: str(root.bestgear)
     Bar:
         id: rpm
-        x: root.x
         center_y: root.center_y
+    BestGear:
+        id: bestg
+        text: str(self.gear)

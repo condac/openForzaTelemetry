@@ -30,19 +30,95 @@ class PongBall(Widget):
     def move(self):
         self.pos = Vector(*self.velocity) + self.pos
 
+class BestGear(Widget):
+    speedArray = []
+    for i in range(500):
+        data = {}
+        data["gear"] = 0
+        data["acc"] = 0.0
+        speedArray.append(data)
+
+    gear = 2
+
+    def giveData(self,inGear, inSpeed, inAcc):
+        speed = int(inSpeed*3.6)
+        compare = float(self.speedArray[speed]["acc"])
+        if (compare < inAcc) :
+            self.speedArray[speed]["acc"] = inAcc
+            self.speedArray[speed]["gear"] = inGear
+
+        return
+    def getBest(self,inSpeed, inGear):
+        speed = int(inSpeed*3.6)
+        out = self.speedArray[speed]["gear"]
+        return out
+    def getBestStr(self,inSpeed, inGear):
+        out = str(inGear)+"("+str(self.getBest(inSpeed, inGear))+")"
+        return out
+
 class Bar(Widget):
     velocity_x = NumericProperty(0)
     velocity_y = NumericProperty(0)
     velocity = ReferenceListProperty(velocity_x, velocity_y)
+    r = NumericProperty(0)
+    g = NumericProperty(0)
+    b = NumericProperty(0)
+    prevRPM = 0
+    prevPower = 0
 
     def move(self):
         self.pos = Vector(*self.velocity) + self.pos
+    def setColor(self,inR,inG,inB):
+        self.r = inR
+        self.g = inG
+        self.b = inB
+    def calcShiftLight(self, inRpm, inPower, inGear, inGearRec) :
 
+        result = False
+        #currentRpm = dataDict["CurrentEngineRpm"]["value"]
+        #currentPower = dataDict["Power"]["value"]
+
+        if (self.prevRPM < inRpm) :
+            if (self.prevPower > inPower) :
+
+                result = True
+        self.prevRPM = inRpm
+        self.prevPower = inPower
+        if (result):
+            if (inGear != inGearRec):
+                #print(inGear,inGearRec)
+                self.setColor(1,0,0)
+            else:
+                self.setColor(1,1,0)
+        else:
+            if (inGear != inGearRec):
+                #print(inGear,inGearRec)
+                self.setColor(1,0,0)
+            else:
+                self.setColor(1,1,1)
+        return result
 
 class PongGame(Widget):
     rpmobject = ObjectProperty(None)
+    gearobject = ObjectProperty(None)
+    rpm_color = (1,1,1)
+    rpmMax = ObjectProperty(None)
     text1 = ObjectProperty(None)
     value1 = 1
+    x1 = ObjectProperty(None)
+
+    tire_temp_fl = ObjectProperty(None)
+    tire_temp_fr = ObjectProperty(None)
+    tire_temp_rl = ObjectProperty(None)
+    tire_temp_rr = ObjectProperty(None)
+
+    fuel = ObjectProperty(None)
+    fuel_DTE_last = 1.0
+    fuel_DTE = ObjectProperty(None)
+    fuel_DTE_lastlap = 0
+
+    bestgear = ObjectProperty(None)
+
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind(('', localPort))
     dataDict = {}
@@ -96,8 +172,28 @@ class PongGame(Widget):
             item["value"] = value
             #print(value)
         self.text1 = int(self.dataDict["CurrentEngineRpm"]["value"])
-        self.rpmobject.x = int(self.dataDict["CurrentEngineRpm"]["value"]) / 10
+        if (self.dataDict["EngineMaxRpm"]["value"] != 0):
+            self.rpmobject.width = self.width * self.dataDict["CurrentEngineRpm"]["value"] / self.dataDict["EngineMaxRpm"]["value"]
+        self.rpmobject.calcShiftLight(self.dataDict["CurrentEngineRpm"]["value"], self.dataDict["Power"]["value"], self.dataDict["Gear"]["value"], self.gearobject.getBest(self.dataDict["Speed"]["value"], self.dataDict["Gear"]["value"]))
+        self.tire_temp_fl = int(self.f2c(self.dataDict["TireTempFrontLeft"]["value"]))
+        self.tire_temp_fr = int(self.f2c(self.dataDict["TireTempFrontRight"]["value"]))
+        self.tire_temp_rl = int(self.f2c(self.dataDict["TireTempRearLeft"]["value"]))
+        self.tire_temp_rr = int(self.f2c(self.dataDict["TireTempRearRight"]["value"]))
 
+        self.fuel = int(self.dataDict["Fuel"]["value"]*100)
+        if (self.dataDict["LapNumber"]["value"]> self.fuel_DTE_lastlap) :
+
+            fuelDelta = self.fuel_DTE_last - self.dataDict["Fuel"]["value"]
+            self.fuel_DTE = float(int((self.dataDict["Fuel"]["value"] / fuelDelta)*10))/10
+            self.fuel_DTE_last = self.dataDict["Fuel"]["value"]
+            self.fuel_DTE_lastlap = self.dataDict["LapNumber"]["value"]
+
+        self.gearobject.giveData(self.dataDict["Gear"]["value"], self.dataDict["Speed"]["value"], self.dataDict["AccelerationZ"]["value"])
+        self.bestgear = self.gearobject.getBestStr(self.dataDict["Speed"]["value"], self.dataDict["Gear"]["value"])
+
+    def f2c(self,Fahrenheit):
+        Celsius = (Fahrenheit - 32) * 5.0/9.0
+        return Celsius
     def on_touch_move(self, touch):
         if touch.x < self.width / 3:
             self.player1.center_y = touch.y
