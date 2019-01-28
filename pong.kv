@@ -77,6 +77,11 @@
         center_x: root.width  / 2
         top: (self.parent.height / 10)*8
         text: str(root.bestgear)
+    Label:
+        font_size: self.parent.height / 30
+        center_x: (self.parent.width  / 20)*16
+        middle: (self.parent.height / 10)*1
+        text: str(root.ip)
     Bar:
         id: rpm
         center_y: root.center_y

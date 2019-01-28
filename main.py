@@ -118,6 +118,7 @@ class PongGame(Widget):
     fuel_DTE_lastlap = 0
 
     bestgear = ObjectProperty(None)
+    ip = ObjectProperty(None)
 
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind(('', localPort))
@@ -161,9 +162,10 @@ class PongGame(Widget):
             #print(self.dataDict)
 
 
-    def serve_ball(self, vel=(4, 0)):
+    def serve_ball(self):
         #self.value1 = ObjectProperty(None)
         x = 1
+        self.ip = self.getIP()
 
     def update(self, dt):
         message, address = self.s.recvfrom(1024)
@@ -199,7 +201,18 @@ class PongGame(Widget):
             self.player1.center_y = touch.y
         if touch.x > self.width - self.width / 3:
             self.player2.center_y = touch.y
+    def getIP(self):
 
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            # doesn't even have to be reachable
+            s.connect(('10.255.255.255', 1))
+            IP = s.getsockname()[0]
+        except:
+            IP = '127.0.0.1'
+        finally:
+            s.close()
+        return IP+":"+str(localPort)
 
 class PongApp(App):
     def build(self):
