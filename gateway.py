@@ -20,5 +20,6 @@ while True:
 
     clientSock.sendto(message, ("192.168.0.102", 20002))
     clientSock.sendto(message, ("192.168.0.111", 20002))
+    clientSock.sendto(message, ("192.168.0.111", 20003))
     nr = nr+1
     print(nr)

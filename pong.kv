@@ -15,23 +15,54 @@
             size:self.size
 <Bar>:
     canvas:
-        Clear
+
         Color:
             rgb: (self.r,self.g,self.b)
         Rectangle:
             pos:self.pos
             size:self.size
 
+
+
+
 <BestGear>:
     Label:
         font_size: self.parent.height / 10
         center_x: root.width  / 2
         top: (self.parent.height / 10)*10
-        text: "str(self.gear)"
+        text: "v0.0.2"
+<FuelDTE>:
+    Label:
+        font_size: self.parent.height / 10
+        center_x: root.width  / 2
+        top: (self.parent.height / 10)*10
+<Boost>:
+    Label:
+        font_size: self.parent.parent.height / 5
+        center_x: self.parent.parent.width  / 2
+        top: (self.parent.parent.height / 10)*3
+        text: str(self.parent.boost)
+
+<BoostGauge>:
+    canvas:
+        PushMatrix:
+        Rotate:
+            angle: root.angle
+            origin: (root.parent.width/2,root.parent.height / 5)
+        Color:
+            rgb: (1.0,0.8,0)
+        Rectangle:
+            pos: (root.parent.width/2,root.parent.height / 5)
+            size: (root.parent.height / 5, root.parent.height / 60)
+        PopMatrix:
+
 
 <PongGame>:
     rpmobject: rpm
     gearobject: bestg
+    fuelDTEobject: fuelobj
+    boostObject: boostobj
+    boostGaugeObject: boostGaugeobj
 
     Label:
         font_size: (self.parent.height / 10)
@@ -82,9 +113,21 @@
         center_x: (self.parent.width  / 20)*16
         middle: (self.parent.height / 10)*1
         text: str(root.ip)
+    Label:
+        font_size: self.parent.height / 20
+        center_x: (self.parent.width  / 20)*17
+        top: (self.parent.height / 10)*9
+        text: str(root.bestLap)
     Bar:
         id: rpm
         center_y: root.center_y
     BestGear:
         id: bestg
         text: str(self.gear)
+    FuelDTE:
+        id: fuelobj
+        text: "DTE "+str(  root.fuel_DTE  )+" Laps test"
+    Boost:
+        id: boostobj
+    BoostGauge:
+        id: boostGaugeobj

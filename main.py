@@ -6,6 +6,7 @@ from kivy.vector import Vector
 from kivy.clock import Clock
 import socket
 import struct
+import select
 
 localPort = 20002
 bufferSize = 1024
@@ -56,6 +57,41 @@ class BestGear(Widget):
         out = str(inGear)+"("+str(self.getBest(inSpeed, inGear))+")"
         return out
 
+class FuelDTE(Widget):
+    fuel_DTE_last = 1.0
+    fuel_DTE_lastlap = 0
+    out = "Firstlap"
+
+    def getDTE(self,dataDict):
+        if (dataDict["LapNumber"]["value"]> self.fuel_DTE_lastlap) :
+            fuelDelta = self.fuel_DTE_last - dataDict["Fuel"]["value"]
+            self.out = float(int((dataDict["Fuel"]["value"] / fuelDelta)*10))/10
+            self.fuel_DTE_last = dataDict["Fuel"]["value"]
+            self.fuel_DTE_lastlap = dataDict["LapNumber"]["value"]
+        if (self.fuel_DTE_last<dataDict["Fuel"]["value"]) :
+            print("refueled")
+            self.out = "Refueled"
+            self.fuel_DTE_last = 1.0
+            self.fuel_DTE_lastlap = dataDict["LapNumber"]["value"]
+        return self.out
+
+class Boost(Widget):
+    boost = NumericProperty(0)
+    def setBoost(self,dataDict):
+        self.boost = round(dataDict["Boost"]["value"] / 14.504, 2)
+        return
+    def getBoost(self):
+
+        return self.boost
+class BoostGauge(Widget):
+    angle = NumericProperty(0)
+    def setBoost(self,dataDict):
+        self.angle = (dataDict["Boost"]["value"] *-6.0)+175
+        return
+    def getBoost(self):
+
+        return self.angle
+
 class Bar(Widget):
     velocity_x = NumericProperty(0)
     velocity_y = NumericProperty(0)
@@ -72,28 +108,33 @@ class Bar(Widget):
         self.r = inR
         self.g = inG
         self.b = inB
-    def calcShiftLight(self, inRpm, inPower, inGear, inGearRec) :
+    def calcShiftLight(self, dataDict, inGearRec) :
 
         result = False
+        inRpm = dataDict["CurrentEngineRpm"]["value"]
+        inPower = dataDict["Power"]["value"]
+        inGear = dataDict["Gear"]["value"]
+        maxRpm = dataDict["EngineMaxRpm"]["value"]
         #currentRpm = dataDict["CurrentEngineRpm"]["value"]
         #currentPower = dataDict["Power"]["value"]
 
-        if (self.prevRPM < inRpm) :
-            if (self.prevPower > inPower) :
+        #if (self.prevRPM < inRpm) :
+        #    if (self.prevPower > inPower) :
+#
+        #        result = True
 
-                result = True
         self.prevRPM = inRpm
         self.prevPower = inPower
+        if (inRpm>(maxRpm*0.733333333333)  ):
+            result = True
+
         if (result):
-            if (inGear != inGearRec):
-                #print(inGear,inGearRec)
-                self.setColor(1,0,0)
-            else:
-                self.setColor(1,1,0)
+            self.setColor(1,0,0)
+
         else:
-            if (inGear != inGearRec):
+            if (inGear > inGearRec):
                 #print(inGear,inGearRec)
-                self.setColor(1,0,0)
+                self.setColor(0,1,0)
             else:
                 self.setColor(1,1,1)
         return result
@@ -101,6 +142,9 @@ class Bar(Widget):
 class PongGame(Widget):
     rpmobject = ObjectProperty(None)
     gearobject = ObjectProperty(None)
+    fuelDTEobject = ObjectProperty(None)
+    boostObject = ObjectProperty(None)
+    boostGaugeObject = ObjectProperty(None)
     rpm_color = (1,1,1)
     rpmMax = ObjectProperty(None)
     text1 = ObjectProperty(None)
@@ -113,15 +157,18 @@ class PongGame(Widget):
     tire_temp_rr = ObjectProperty(None)
 
     fuel = ObjectProperty(None)
-    fuel_DTE_last = 1.0
+
     fuel_DTE = ObjectProperty(None)
-    fuel_DTE_lastlap = 0
+
 
     bestgear = ObjectProperty(None)
     ip = ObjectProperty(None)
+    bestLap = ObjectProperty(None)
+
 
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind(('', localPort))
+    #s.setblocking(0)
     dataDict = {}
     with open("dataformat.csv", "r") as dataformatfile:
 
@@ -173,34 +220,44 @@ class PongGame(Widget):
             (value,) = struct.unpack_from(item["type"],message, offset=item["offset"])
             item["value"] = value
             #print(value)
-        self.text1 = int(self.dataDict["CurrentEngineRpm"]["value"])
-        if (self.dataDict["EngineMaxRpm"]["value"] != 0):
-            self.rpmobject.width = self.width * self.dataDict["CurrentEngineRpm"]["value"] / self.dataDict["EngineMaxRpm"]["value"]
-        self.rpmobject.calcShiftLight(self.dataDict["CurrentEngineRpm"]["value"], self.dataDict["Power"]["value"], self.dataDict["Gear"]["value"], self.gearobject.getBest(self.dataDict["Speed"]["value"], self.dataDict["Gear"]["value"]))
-        self.tire_temp_fl = int(self.f2c(self.dataDict["TireTempFrontLeft"]["value"]))
-        self.tire_temp_fr = int(self.f2c(self.dataDict["TireTempFrontRight"]["value"]))
-        self.tire_temp_rl = int(self.f2c(self.dataDict["TireTempRearLeft"]["value"]))
-        self.tire_temp_rr = int(self.f2c(self.dataDict["TireTempRearRight"]["value"]))
+        if (self.dataDict["IsRaceOn"]["value"] == 1) :
+            #print(self.dataDict["EngineMaxRpm"]["value"])
+            self.text1 = int(self.dataDict["CurrentEngineRpm"]["value"])
+            if (self.dataDict["EngineMaxRpm"]["value"] != 0):
+                self.rpmobject.width = self.width * self.dataDict["CurrentEngineRpm"]["value"] / self.dataDict["EngineMaxRpm"]["value"]
+            self.rpmobject.calcShiftLight(self.dataDict, self.gearobject.getBest(self.dataDict["Speed"]["value"], self.dataDict["Gear"]["value"]))
+            self.tire_temp_fl = int(self.f2c(self.dataDict["TireTempFrontLeft"]["value"]))
+            self.tire_temp_fr = int(self.f2c(self.dataDict["TireTempFrontRight"]["value"]))
+            self.tire_temp_rl = int(self.f2c(self.dataDict["TireTempRearLeft"]["value"]))
+            self.tire_temp_rr = int(self.f2c(self.dataDict["TireTempRearRight"]["value"]))
 
-        self.fuel = int(self.dataDict["Fuel"]["value"]*100)
-        if (self.dataDict["LapNumber"]["value"]> self.fuel_DTE_lastlap) :
+            self.fuel = int(self.dataDict["Fuel"]["value"]*100)
+            self.fuel_DTE = self.fuelDTEobject.getDTE(self.dataDict)
 
-            fuelDelta = self.fuel_DTE_last - self.dataDict["Fuel"]["value"]
-            self.fuel_DTE = float(int((self.dataDict["Fuel"]["value"] / fuelDelta)*10))/10
-            self.fuel_DTE_last = self.dataDict["Fuel"]["value"]
-            self.fuel_DTE_lastlap = self.dataDict["LapNumber"]["value"]
 
-        self.gearobject.giveData(self.dataDict["Gear"]["value"], self.dataDict["Speed"]["value"], self.dataDict["AccelerationZ"]["value"])
-        self.bestgear = self.gearobject.getBestStr(self.dataDict["Speed"]["value"], self.dataDict["Gear"]["value"])
+            self.gearobject.giveData(self.dataDict["Gear"]["value"], self.dataDict["Speed"]["value"], self.dataDict["AccelerationZ"]["value"])
+            self.bestgear = self.gearobject.getBestStr(self.dataDict["Speed"]["value"], self.dataDict["Gear"]["value"])
+            self.bestLap = "BestLap: "+self.time2str(self.dataDict["BestLap"]["value"])
+
+            self.boostObject.setBoost(self.dataDict)
+            self.boostGaugeObject.setBoost(self.dataDict)
+
+        ready = select.select([self.s], [], [], 0.001)
+        if ready[0]:
+            #print("flushing network")
+            message, address = self.s.recvfrom(1024)
+            ready = select.select([self.s], [], [], 0.001)
+            if ready[0]:
+                print("double flushing network")
+                message, address = self.s.recvfrom(1024)
+
 
     def f2c(self,Fahrenheit):
         Celsius = (Fahrenheit - 32) * 5.0/9.0
         return Celsius
     def on_touch_move(self, touch):
-        if touch.x < self.width / 3:
-            self.player1.center_y = touch.y
-        if touch.x > self.width - self.width / 3:
-            self.player2.center_y = touch.y
+        #reset?
+        return
     def getIP(self):
 
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -213,12 +270,19 @@ class PongGame(Widget):
         finally:
             s.close()
         return IP+":"+str(localPort)
+    def time2str(self, inTime):
+        m, s = divmod(inTime, 60)
+
+        out = "%02d:%02.3f" % (m, s)
+
+        return out
+
 
 class PongApp(App):
     def build(self):
         game = PongGame()
         game.serve_ball()
-        Clock.schedule_interval(game.update, 1.0 / 120.0)
+        Clock.schedule_interval(game.update, 1.0 / 60.0)
         return game
 
 
