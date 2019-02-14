@@ -9,9 +9,12 @@ import pygame.freetype
 # Pygame stuff
 pygame.init()
 screen_x = 1280
-screen_y = 500 # times 2
-screen = pygame.display.set_mode((screen_x, screen_y*2))
+screen_y = 1000 # times 2
+screen = pygame.display.set_mode((screen_x, screen_y),  pygame.DOUBLEBUF, 32)
 GAME_FONT = pygame.freetype.SysFont(name="default", size=24)
+
+su = pygame.Surface((screen_x,screen_y), pygame.SRCALPHA)   # per-pixel alpha
+su.fill((0,0,0,1))                         # notice the alpha value in the color
 
 clock = pygame.time.Clock()
 
@@ -85,15 +88,47 @@ def calcShiftLight() :
 
 def speed2X(inSpeed) :
     global screen_x
-    maxSpeed = 300
+    maxSpeed = 230
     multi = inSpeed/maxSpeed
     x = screen_x*multi
     return x
+def rpm2Y(inRPM) :
+    if (inRPM<0) :
+        inRPM = 0
+    global screen_y
+    maxRPM = dataDict["EngineMaxRpm"]["value"] +1
+    multi = inRPM/maxRPM
+    y = screen_y*multi
+    y = screen_y - y
+    #print(inAxx, y)
+    return y
+def hp2Y(inAxx) :
+    if (inAxx<0) :
+        inAxx = 0
+    global screen_y
+    screen = screen_y/2
+    maxAxx = 1300000
+    multi = inAxx/maxAxx
+    y = screen*multi
+    y = screen - y
+    #print(inAxx, y)
+    return y
+def nm2Y(inAxx) :
+    if (inAxx<0) :
+        inAxx = 0
+    global screen_y
+    screen = screen_y/2
+    maxAxx = 1300
+    multi = inAxx/maxAxx
+    y = screen*multi
+    y = screen - y
+    #print(inAxx, y)
+    return y
 def axx2Y(inAxx) :
     if (inAxx<0) :
         inAxx = 0
     global screen_y
-    maxAxx = 20
+    maxAxx = 10
     multi = inAxx/maxAxx
     y = screen_y*multi
     y = screen_y - y
@@ -103,7 +138,7 @@ def axx2Y2(inAxx) :
     if (inAxx<0) :
         inAxx = 0
     global screen_y
-    maxAxx = 0.02
+    maxAxx = 0.01
     multi = inAxx/maxAxx
     y = screen_y*multi
     #print(inAxx, y)
@@ -144,6 +179,7 @@ def getGearColor(inGear):
     return (0,0,0)
 
 running = True
+clearTimer = 0
 while running:
     message, address = s.recvfrom(1024)
 
@@ -177,12 +213,24 @@ while running:
         print("c is pressed")
         screen.fill((0, 0, 0)) # Clear screen when pressing key
 
+    #screen.fill((0, 0, 0, 1))
+    clearTimer+=1
+    if (clearTimer>100):
+        screen.blit(su, (0,0))
+        clearTimer = 0
     color = (255, 100, 0)
     x1 = int(speed2X(dataDict["Speed"]["value"]*3.6))
     y1 = int(axx2Y(dataDict["AccelerationZ"]["value"]))
     pygame.draw.rect(screen, getGearColor(dataDict["Gear"]["value"]), pygame.Rect(x1, y1, 2, 2))
-    y1 = int(axx2Y2(calcAxx()))
-    pygame.draw.rect(screen, getGearColor(dataDict["Gear"]["value"]), pygame.Rect(x1, y1, 2, 2))
+    y2 = int(rpm2Y(dataDict["CurrentEngineRpm"]["value"]))
+    pygame.draw.rect(screen, (255,255,255), pygame.Rect(x1, y2, 1, 1))
+    y3 = int(hp2Y(dataDict["Power"]["value"]))
+    pygame.draw.rect(screen, (255,100,100), pygame.Rect(x1, y3, 1, 1))
+    y3 = int(nm2Y(dataDict["Torque"]["value"]))
+    pygame.draw.rect(screen, (100,255,100), pygame.Rect(x1, y3, 1, 1))
+    print(dataDict["Torque"]["value"], dataDict["Power"]["value"])
+    #y1 = int(axx2Y2(calcAxx()))
+    #pygame.draw.rect(screen, getGearColor(dataDict["Gear"]["value"]), pygame.Rect(x1, y1, 2, 2))
 
     #GAME_FONT.render_to(screen, (40, 350), str(dataDict["Fuel"]["value"]), (128, 128, 128))
 

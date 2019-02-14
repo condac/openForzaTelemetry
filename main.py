@@ -92,6 +92,14 @@ class BoostGauge(Widget):
 
         return self.angle
 
+class RevLimit(Widget):
+    r = NumericProperty(0)
+    g = NumericProperty(0)
+    b = NumericProperty(0)
+    def setRevLimit(self,input, width):
+        self.parent.rpmobject.revLimitPercent = input/  self.parent.width
+        print("rpm limit",self.parent.rpmobject.revLimitPercent )
+
 class Bar(Widget):
     velocity_x = NumericProperty(0)
     velocity_y = NumericProperty(0)
@@ -101,6 +109,7 @@ class Bar(Widget):
     b = NumericProperty(0)
     prevRPM = 0
     prevPower = 0
+    revLimitPercent = 0.8
 
     def move(self):
         self.pos = Vector(*self.velocity) + self.pos
@@ -125,7 +134,7 @@ class Bar(Widget):
 
         self.prevRPM = inRpm
         self.prevPower = inPower
-        if (inRpm>(maxRpm*0.733333333333)  ):
+        if (inRpm>(maxRpm*self.revLimitPercent)  ):
             result = True
 
         if (result):
@@ -150,6 +159,8 @@ class PongGame(Widget):
     text1 = ObjectProperty(None)
     value1 = 1
     x1 = ObjectProperty(None)
+    revlimitObject = ObjectProperty(None)
+
 
     tire_temp_fl = ObjectProperty(None)
     tire_temp_fr = ObjectProperty(None)
@@ -164,6 +175,7 @@ class PongGame(Widget):
     bestgear = ObjectProperty(None)
     ip = ObjectProperty(None)
     bestLap = ObjectProperty(None)
+    lastLap = ObjectProperty(None)
 
 
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -238,6 +250,7 @@ class PongGame(Widget):
             self.gearobject.giveData(self.dataDict["Gear"]["value"], self.dataDict["Speed"]["value"], self.dataDict["AccelerationZ"]["value"])
             self.bestgear = self.gearobject.getBestStr(self.dataDict["Speed"]["value"], self.dataDict["Gear"]["value"])
             self.bestLap = "BestLap: "+self.time2str(self.dataDict["BestLap"]["value"])
+            self.lastLap = "LastLap: "+self.time2str(self.dataDict["LastLap"]["value"])
 
             self.boostObject.setBoost(self.dataDict)
             self.boostGaugeObject.setBoost(self.dataDict)
@@ -256,6 +269,8 @@ class PongGame(Widget):
         Celsius = (Fahrenheit - 32) * 5.0/9.0
         return Celsius
     def on_touch_move(self, touch):
+        self.revlimitObject.center_x = touch.x
+        self.revlimitObject.setRevLimit(touch.x, self.width)
         #reset?
         return
     def getIP(self):

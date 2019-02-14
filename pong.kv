@@ -21,9 +21,14 @@
         Rectangle:
             pos:self.pos
             size:self.size
-
-
-
+<RevLimit>:
+    size: 10, 200
+    canvas:
+        Color:
+            rgb: (0.5,0.5,0.5)
+        Rectangle:
+            pos:self.pos
+            size:self.size
 
 <BestGear>:
     Label:
@@ -63,6 +68,7 @@
     fuelDTEobject: fuelobj
     boostObject: boostobj
     boostGaugeObject: boostGaugeobj
+    revlimitObject: revlimitobj
 
     Label:
         font_size: (self.parent.height / 10)
@@ -116,10 +122,18 @@
     Label:
         font_size: self.parent.height / 20
         center_x: (self.parent.width  / 20)*17
-        top: (self.parent.height / 10)*9
+        top: (self.parent.height / 20)*19
         text: str(root.bestLap)
+    Label:
+        font_size: self.parent.height / 20
+        center_x: (self.parent.width  / 20)*17
+        top: (self.parent.height / 20)*18
+        text: str(root.lastLap)
     Bar:
         id: rpm
+        center_y: root.center_y
+    RevLimit:
+        id: revlimitobj
         center_y: root.center_y
     BestGear:
         id: bestg
