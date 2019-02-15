@@ -6,10 +6,15 @@ import serial
 import pygame
 import pygame.freetype
 
+
+maxSpeed = 220
+maxPower = 200
+maxTorque = 500
+
 # Pygame stuff
 pygame.init()
 screen_x = 1280
-screen_y = 1000 # times 2
+screen_y = 1000
 screen = pygame.display.set_mode((screen_x, screen_y),  pygame.DOUBLEBUF, 32)
 GAME_FONT = pygame.freetype.SysFont(name="default", size=24)
 
@@ -88,7 +93,7 @@ def calcShiftLight() :
 
 def speed2X(inSpeed) :
     global screen_x
-    maxSpeed = 230
+    global maxSpeed
     multi = inSpeed/maxSpeed
     x = screen_x*multi
     return x
@@ -106,8 +111,9 @@ def hp2Y(inAxx) :
     if (inAxx<0) :
         inAxx = 0
     global screen_y
+    global maxPower
     screen = screen_y/2
-    maxAxx = 1300000
+    maxAxx = maxPower*1000
     multi = inAxx/maxAxx
     y = screen*multi
     y = screen - y
@@ -117,8 +123,9 @@ def nm2Y(inAxx) :
     if (inAxx<0) :
         inAxx = 0
     global screen_y
+    global maxTorque
     screen = screen_y/2
-    maxAxx = 1300
+    maxAxx = maxTorque
     multi = inAxx/maxAxx
     y = screen*multi
     y = screen - y
@@ -128,7 +135,7 @@ def axx2Y(inAxx) :
     if (inAxx<0) :
         inAxx = 0
     global screen_y
-    maxAxx = 10
+    maxAxx = maxPower/20
     multi = inAxx/maxAxx
     y = screen_y*multi
     y = screen_y - y
@@ -142,13 +149,15 @@ def axx2Y2(inAxx) :
     multi = inAxx/maxAxx
     y = screen_y*multi
     #print(inAxx, y)
-    y = screen_y*2 - y
+    y = screen_y - y
     return y
 lastTime = 0
 lastSpeed = 0
+lastAxx = 0.0
 def calcAxx():
     global lastTime
     global lastSpeed
+    global lastAxx
     deltaTime = dataDict["TimestampMS"]["value"] - lastTime
     deltaSpeed = dataDict["Speed"]["value"] - lastSpeed
     axxout = 0
@@ -157,6 +166,12 @@ def calcAxx():
 
     lastTime = dataDict["TimestampMS"]["value"]
     lastSpeed = dataDict["Speed"]["value"]
+
+    return  axxout
+def filterX(inValue, filter):
+    global lastAxx
+    axxout = (lastAxx*filter + inValue) / (filter+1)
+    lastAxx = axxout
     return  axxout
 
 def getGearColor(inGear):
@@ -220,7 +235,10 @@ while running:
         clearTimer = 0
     color = (255, 100, 0)
     x1 = int(speed2X(dataDict["Speed"]["value"]*3.6))
-    y1 = int(axx2Y(dataDict["AccelerationZ"]["value"]))
+    f = filterX(dataDict["AccelerationZ"]["value"], 2)
+
+    y1 = int(axx2Y( f))
+    #y1 = int(axx2Y2(calcAxx()))
     pygame.draw.rect(screen, getGearColor(dataDict["Gear"]["value"]), pygame.Rect(x1, y1, 2, 2))
     y2 = int(rpm2Y(dataDict["CurrentEngineRpm"]["value"]))
     pygame.draw.rect(screen, (255,255,255), pygame.Rect(x1, y2, 1, 1))
@@ -228,7 +246,7 @@ while running:
     pygame.draw.rect(screen, (255,100,100), pygame.Rect(x1, y3, 1, 1))
     y3 = int(nm2Y(dataDict["Torque"]["value"]))
     pygame.draw.rect(screen, (100,255,100), pygame.Rect(x1, y3, 1, 1))
-    print(dataDict["Torque"]["value"], dataDict["Power"]["value"])
+    #print(dataDict["Torque"]["value"], dataDict["Power"]["value"])
     #y1 = int(axx2Y2(calcAxx()))
     #pygame.draw.rect(screen, getGearColor(dataDict["Gear"]["value"]), pygame.Rect(x1, y1, 2, 2))
 
