@@ -17,6 +17,10 @@ localIP = ""
 localPort = 20002
 bufferSize = 1024
 
+
+maxRPM = 4500
+minRPM = 3800
+
 dataDict = {}
 #arduino = serial.Serial('/dev/ttyACM0', 9600)
 
@@ -81,6 +85,18 @@ def calcShiftLight() :
 
     return result
 
+def getRPMMinMax():
+    global minRPM, maxRPM
+    currentRpm = dataDict["CurrentEngineRpm"]["value"]
+    if currentRpm<minRPM:
+        color = (255, 0, 0)
+        return color
+    if currentRpm>maxRPM:
+        color = (0, 255, 255)
+        return color
+    color = (0,0,0)
+    return color
+
 running = True
 while running:
     message, address = s.recvfrom(1024)
@@ -122,5 +138,7 @@ while running:
     if calcShiftLight():
         color = (0, 0, 200)
         pygame.draw.rect(screen, color, pygame.Rect(0, 0, 1000, 60))
+    color = getRPMMinMax()
+    pygame.draw.rect(screen, color, pygame.Rect(0, 120, 1000, 120))
 
     pygame.display.flip()

@@ -65,7 +65,10 @@ class FuelDTE(Widget):
     def getDTE(self,dataDict):
         if (dataDict["LapNumber"]["value"]> self.fuel_DTE_lastlap) :
             fuelDelta = self.fuel_DTE_last - dataDict["Fuel"]["value"]
+            if (fuelDelta == 0.0):
+                fuelDelta = 1.0
             self.out = float(int((dataDict["Fuel"]["value"] / fuelDelta)*10))/10
+
             self.fuel_DTE_last = dataDict["Fuel"]["value"]
             self.fuel_DTE_lastlap = dataDict["LapNumber"]["value"]
         if (self.fuel_DTE_last<dataDict["Fuel"]["value"]) :
@@ -76,13 +79,32 @@ class FuelDTE(Widget):
         return self.out
 
 class Boost(Widget):
-    boost = NumericProperty(0)
+    boost = "test"#NumericProperty(0)
+    r = NumericProperty(0)
+    g = NumericProperty(0)
+    b = NumericProperty(0)
+
+    def setColor(self,inR,inG,inB):
+        self.r = inR
+        self.g = inG
+        self.b = inB
+
     def setBoost(self,dataDict):
         self.boost = round(dataDict["Boost"]["value"] / 14.504, 2)
         return
-    def getBoost(self):
 
+    def setDelta(self, input):
+        print("deltaset")
+        self.boost = f"[color=ff3333]{input}[/color]delta"
+        if (input>0):
+            self.setColor(1,0,0)
+        if (input<0):
+            self.setColor(0,1,0)
+
+
+    def getBoost(self):
         return self.boost
+
 class BoostGauge(Widget):
     angle = NumericProperty(0)
     def setBoost(self,dataDict):
@@ -109,7 +131,7 @@ class Bar(Widget):
     b = NumericProperty(0)
     prevRPM = 0
     prevPower = 0
-    revLimitPercent = 0.8
+    revLimitPercent = 0.9
 
     def move(self):
         self.pos = Vector(*self.velocity) + self.pos
@@ -134,18 +156,30 @@ class Bar(Widget):
 
         self.prevRPM = inRpm
         self.prevPower = inPower
-        if (inRpm>(maxRpm*self.revLimitPercent)  ):
+        #if (inRpm>(maxRpm*self.revLimitPercent)  ):
+        if (inRpm>maxRpm*self.revLimitPercent):
+
             result = True
+            self.setColor(1,0,1)
+        elif (inRpm>(maxRpm*self.revLimitPercent)-100 ):
 
-        if (result):
+            result = True
+            self.setColor(0,0,1)
+        elif (inRpm<maxRpm*0.5):
             self.setColor(1,0,0)
-
         else:
-            if (inGear > inGearRec):
-                #print(inGear,inGearRec)
-                self.setColor(0,1,0)
-            else:
-                self.setColor(1,1,1)
+            self.setColor(0.3,0.3,0.3)
+                #   if (result):
+    #    self.setColor(1,0,1)
+
+        #else:
+#            if (inGear > inGearRec):
+#                #print(inGear,inGearRec)
+#                self.setColor(1,0,0)
+#            elif (inGear < inGearRec):
+#                self.setColor(0,1,0)
+#            else:
+#                self.setColor(0.3,0.3,0.3)
         return result
 
 class PongGame(Widget):
@@ -170,13 +204,26 @@ class PongGame(Widget):
     fuel = ObjectProperty(None)
 
     fuel_DTE = ObjectProperty(None)
-
+    delta = ObjectProperty(None)
 
     bestgear = ObjectProperty(None)
     ip = ObjectProperty(None)
     bestLap = ObjectProperty(None)
     lastLap = ObjectProperty(None)
 
+
+    #Timedelta
+    currentDeltas = []
+    bestDeltas = []
+    lastLapNr = 0
+    deltaCounter = 0
+    deltaDistOff = 0
+    deltaTimeOff = 0
+    deltaBestLap = 9999999999999
+    deltaPrevDelt = 0
+    for i in range(10000):
+        currentDeltas.append(0)
+        bestDeltas.append(0)
 
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind(('', localPort))
@@ -220,6 +267,50 @@ class PongGame(Widget):
             dataDict[name] = newdata
             #print(self.dataDict)
 
+    def calcDeltas(self):
+        out = 0.0
+        if (self.lastLapNr>self.dataDict["LapNumber"]["value"]):
+            print("new race")
+            self.deltaCounter = 0
+            self.deltaDistOff = 0
+            self.deltaTimeOff = 0
+            self.deltaBestLap = 9999999999999
+            self.lastLapNr = 0
+
+        if self.lastLapNr<self.dataDict["LapNumber"]["value"]:
+            lapNr = self.dataDict["LapNumber"]["value"]
+            print("Lap", self.dataDict["LapNumber"]["value"])
+
+            if (lapNr>=1):
+                laptime = self.dataDict["TimestampMS"]["value"] - self.deltaTimeOff
+                if laptime < self.deltaBestLap and laptime > (1000*60):
+                    print("new best", laptime)
+                    self.deltaBestLap = laptime
+                    self.bestDeltas = self.currentDeltas.copy()
+                else:
+                    print("old best", self.deltaBestLap, laptime)
+            self.deltaDistOff = self.dataDict["DistanceTraveled"]["value"]
+            self.deltaTimeOff = self.dataDict["TimestampMS"]["value"]
+            self.lastLapNr = self.dataDict["LapNumber"]["value"]
+        else :
+            index = int((self.dataDict["DistanceTraveled"]["value"] - self.deltaDistOff)/10)
+            if index != self.deltaCounter:
+                self.deltaCounter = index
+                time = self.dataDict["TimestampMS"]["value"] - self.deltaTimeOff
+                if (index < len(self.currentDeltas)-1):
+                    self.currentDeltas[index] = time
+                    out = (self.currentDeltas[index] - self.bestDeltas[index])/1000
+
+                else :
+                    out = 0.0
+                self.deltaPrevDelt = out
+            else:
+                out = self.deltaPrevDelt
+        if out > 0:
+            out = f"[color=ff3333]{out:.3f}[/color]"
+        else :
+            out = f"[color=33ff33]{out:.3f}[/color]"
+        return out
 
     def serve_ball(self):
         #self.value1 = ObjectProperty(None)
@@ -234,7 +325,10 @@ class PongGame(Widget):
             #print(value)
         if (self.dataDict["IsRaceOn"]["value"] == 1) :
             #print(self.dataDict["EngineMaxRpm"]["value"])
-            self.text1 = int(self.dataDict["CurrentEngineRpm"]["value"])
+
+            self.delta =  self.calcDeltas()
+            #print(self.dataDict["LapNumber"]["value"] , int(self.dataDict["DistanceTraveled"]["value"]), self.dataDict["TimestampMS"]["value"])
+            self.text1 = str(int(self.dataDict["CurrentEngineRpm"]["value"])) + " ("+str(int(self.dataDict["EngineMaxRpm"]["value"]*self.rpmobject.revLimitPercent))+")"
             if (self.dataDict["EngineMaxRpm"]["value"] != 0):
                 self.rpmobject.width = self.width * self.dataDict["CurrentEngineRpm"]["value"] / self.dataDict["EngineMaxRpm"]["value"]
             self.rpmobject.calcShiftLight(self.dataDict, self.gearobject.getBest(self.dataDict["Speed"]["value"], self.dataDict["Gear"]["value"]))
@@ -254,6 +348,7 @@ class PongGame(Widget):
 
             self.boostObject.setBoost(self.dataDict)
             self.boostGaugeObject.setBoost(self.dataDict)
+            #self.boostObject.setDelta(delta)
 
         ready = select.select([self.s], [], [], 0.001)
         if ready[0]:
@@ -261,7 +356,7 @@ class PongGame(Widget):
             message, address = self.s.recvfrom(1024)
             ready = select.select([self.s], [], [], 0.001)
             if ready[0]:
-                print("double flushing network")
+                #print("double flushing network")
                 message, address = self.s.recvfrom(1024)
 
 

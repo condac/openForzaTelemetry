@@ -43,10 +43,11 @@
         top: (self.parent.height / 10)*10
 <Boost>:
     Label:
-        font_size: self.parent.parent.height / 5
-        center_x: self.parent.parent.width  / 2
-        top: (self.parent.parent.height / 10)*3
+        font_size: self.parent.parent.height / 7
+        center_x: self.parent.parent.width  / 3
+        top: (self.parent.parent.height / 10)*5
         text: str(self.parent.boost)
+
 
 <BoostGauge>:
     canvas:
@@ -57,7 +58,7 @@
         Color:
             rgb: (1.0,0.8,0)
         Rectangle:
-            pos: (root.parent.width/2,root.parent.height / 5)
+            pos: (root.parent.width,root.parent.height / 5)
             size: (root.parent.height / 5, root.parent.height / 60)
         PopMatrix:
 
@@ -108,6 +109,12 @@
         x: (self.parent.width  / 20)*1.5
         top: (self.parent.height / 10)*7
         text: "DTE "+str(  root.fuel_DTE  )+" Laps"
+    Label:
+        font_size: self.parent.height / 5
+        center_x: root.width  / 2
+        top: (self.parent.height / 10)*3
+        text: "" +str(root.delta) + "s"
+        markup: True
 
     Label:
         font_size: self.parent.height / 5
