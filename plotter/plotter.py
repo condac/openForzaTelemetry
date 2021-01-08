@@ -1,7 +1,6 @@
 import socket
 import struct
 import sys
-import serial
 
 import pygame
 import pygame.freetype
