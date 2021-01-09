@@ -13,8 +13,9 @@ from PyQt5.QtGui import  *
 netLog.speedLog("import klart qt")
 
 import socket
-
+from pathlib import Path
 import traceback
+import json
 #from pathlib import Path
 #from functools import partial
 netLog.speedLog("import klart sys")
@@ -25,24 +26,28 @@ netLog.speedLog("import klart eget")
 
 SRC_PATH = os.path.dirname(os.path.abspath(__file__))
 
-NR_OUTPUTS = 5
+NR_OUTPUTS = 8
 
 class udpClone(QMainWindow):
     def __init__(self):
         super(udpClone,self).__init__()
-
+        self.settings = {}
+        self.loadSettings()
         self.checkboxList = []
         self.ipList = []
         self.portList = []
         self.packets = 0
         self.initUI()
 
+
         self.udpThread = UdpThread()
+
 
         redrawMs = 500
         self.timer1 = QTimer()
         self.timer1.timeout.connect(self.redraw)
         self.timer1.start(redrawMs)
+        self.onUpdateButton()
         self.udpThread.start()
 
     def initUI(self):
@@ -67,9 +72,13 @@ class udpClone(QMainWindow):
 
         row = 3
         for i in range(NR_OUTPUTS):
+            ip1 = self.settings["list"][i]["ip"]
+            port1 = self.settings["list"][i]["port"]
+            check = self.settings["list"][i]["check"]
             checkbox = QCheckBox("Active")
-            ip = QLineEdit("localhost")
-            port = QLineEdit(str(20002+i))
+            checkbox.setChecked(check)
+            ip = QLineEdit(ip1)
+            port = QLineEdit(str(port1))
 
             self.ui.gridLayout.addWidget(checkbox, row, 0)
             self.ui.gridLayout.addWidget(ip, row, 1)
@@ -80,6 +89,32 @@ class udpClone(QMainWindow):
             self.ipList.append(ip)
             self.portList.append(port)
             row+=1
+        label1 = QLabel("dash 20002")
+        self.ui.gridLayout.addWidget(label1, 3, 3)
+        label2 = QLabel("plotter 20003")
+        self.ui.gridLayout.addWidget(label2, 4, 3)
+        label3 = QLabel("recorder 20006")
+        self.ui.gridLayout.addWidget(label3, 7, 3)
+
+    def loadSettings(self):
+        self.settingsfilename = "udpsettings.json"
+        self.settings = {}
+
+        my_file = Path(self.settingsfilename)
+        if my_file.is_file():
+            with open(self.settingsfilename) as settings_file:
+                self.settings = json.load(settings_file)
+        else:
+            self.settings["portIn"] = 20001
+            self.settings["list"] = []
+            for i in range(NR_OUTPUTS):
+                out = {}
+                out["check"] = False
+                out["ip"] = "localhost"
+                out["port"] = 20002+i
+
+                self.settings["list"].append(out)
+
 
     def closeEvent(self, event):
         self.udpThread.running = False
@@ -94,12 +129,16 @@ class udpClone(QMainWindow):
         self.packets = self.udpThread.counter
         self.ui.labelPackets.setText(""+str(self.packets))
 
+    def saveSettings(self):
+        with open(self.settingsfilename, 'w') as outfile:
+            json.dump(self.settings, outfile, indent=3, sort_keys=True)
 
     def onUpdateButton(self):
         portIn = self.ui.portIn.text()
-
+        self.settings["portIn"] = portIn
         print("update ", portIn)
         ulist = []
+        self.settings["list"] = []
         for i in range(NR_OUTPUTS):
             out = {}
             out["check"] = self.checkboxList[i].isChecked()
@@ -107,8 +146,11 @@ class udpClone(QMainWindow):
             out["port"] = self.portList[i].text()
             ulist.append(out)
             print("update ", out)
+            self.settings["list"].append(out)
 
         self.udpThread.updateValues(portIn, ulist)
+        self.saveSettings()
+
 import threading
 import time
 
@@ -133,18 +175,22 @@ class UdpThread(threading.Thread):
         netLog.speedLog("started udpThread")
 
         #print(array)
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.settimeout(1.0)
-        s.bind(('', self.localPort))
+        #s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        #s.settimeout(1.0)
+        #s.bind(('', self.localPort))
 
-        clientSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        #clientSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.update = True
         self.counter = 110
         while self.running:
             if self.update:
                 self.counter = 0
                 self.update = False
-                clientSock.close()
-                s.close()
+                try:
+                    clientSock.close()
+                    s.close()
+                except UnboundLocalError :
+                    print("hej")
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 s.settimeout(1.0)
                 s.bind(('', self.localPort))
@@ -156,7 +202,12 @@ class UdpThread(threading.Thread):
                 self.counter = self.counter+1
                 for out in self.outputList:
                     if (out["check"]):
-                        clientSock.sendto(message, (out["ip"], int(out["port"])) )
+                        try:
+                            clientSock.sendto(message, (out["ip"], int(out["port"])) )
+                        except socket.gaierror:
+                            print("Can not connect to:", out["ip"])
+                            continue
+
 
             except socket.timeout:
                 print('no data')
