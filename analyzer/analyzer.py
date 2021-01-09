@@ -108,25 +108,38 @@ class Trend(QMainWindow):
         laps1 = []
         lapStart1 = []
         lapStartTime1 = []
+        for i in range(200):
+            lapStart1.append(0.0)
+            lapStartTime1.append(0.0)
         for i in range(len(self.car1["LapNumber"])):
             if str(int(self.car1["LapNumber"][i])) not in laps1:
                 laps1.append(str(int(self.car1["LapNumber"][i])))
-                lapStart1.append(self.car1["DistanceTraveled"][i])
-                lapStartTime1.append(self.car1["TimestampMS"][i])
+                #lapStart1.append(self.car1["DistanceTraveled"][i])
+                lapStart1[int(self.car1["LapNumber"][i])] = self.car1["DistanceTraveled"][i]
+                #lapStartTime1.append(self.car1["TimestampMS"][i])
+                lapStartTime1[int(self.car1["LapNumber"][i])] = self.car1["TimestampMS"][i]
         for i in range(len(self.car1["DistanceTraveled"])):
-            self.car1["DistanceTraveled"][i] = self.car1["DistanceTraveled"][i] - lapStart1[int(self.car1["LapNumber"][i])]
-            self.car1["TimestampMS"][i] = self.car1["TimestampMS"][i] - lapStartTime1[int(self.car1["LapNumber"][i])]
+            if i >= len(self.car1["LapNumber"]):
+                print(i , len(self.car1["LapNumber"]))
+            else:
+                self.car1["DistanceTraveled"][i] = self.car1["DistanceTraveled"][i] - lapStart1[int(self.car1["LapNumber"][i])]
+                self.car1["TimestampMS"][i] = self.car1["TimestampMS"][i] - lapStartTime1[int(self.car1["LapNumber"][i])]
         self.ui.comboBoxLaps1.addItems(laps1)
         self.laps1 = laps1
         #LapNumber Car 2
         laps2 = []
         lapStart2 = []
         lapStartTime2 = []
+        for i in range(200):
+            lapStart2.append(0.0)
+            lapStartTime2.append(0.0)
         for i in range(len(self.car2["LapNumber"])):
             if str(int(self.car2["LapNumber"][i])) not in laps2:
                 laps2.append(str(int(self.car2["LapNumber"][i])))
-                lapStart2.append(self.car2["DistanceTraveled"][i]) # Find where lap start
-                lapStartTime2.append(self.car2["TimestampMS"][i])
+                #lapStart2.append(self.car2["DistanceTraveled"][i]) # Find where lap start
+                #lapStartTime2.append(self.car2["TimestampMS"][i])
+                lapStart2[int(self.car2["LapNumber"][i])] = self.car2["DistanceTraveled"][i]
+                lapStartTime2[int(self.car2["LapNumber"][i])] = self.car2["TimestampMS"][i]
         for i in range(len(self.car2["DistanceTraveled"])):
             self.car2["DistanceTraveled"][i] = self.car2["DistanceTraveled"][i] - lapStart2[int(self.car2["LapNumber"][i])] # Subtract start distance from all points
             self.car2["TimestampMS"][i] = self.car2["TimestampMS"][i] - lapStartTime2[int(self.car2["LapNumber"][i])]
