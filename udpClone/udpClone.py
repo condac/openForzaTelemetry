@@ -70,6 +70,8 @@ class udpClone(QMainWindow):
 
         self.ui.pushButton.clicked.connect(self.onUpdateButton)
 
+        self.ui.portIn.setText(self.settings["portIn"])
+
         row = 3
         for i in range(NR_OUTPUTS):
             ip1 = self.settings["list"][i]["ip"]
@@ -121,7 +123,6 @@ class udpClone(QMainWindow):
         event.accept() # let the window close
 
     def redraw(self):
-
         if (self.packets != self.udpThread.counter):
             self.ui.labelPackets.setStyleSheet("background-color: lightgreen")
         else:
