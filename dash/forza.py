@@ -1,17 +1,16 @@
 import socket
 import struct
 import sys
-import os
+import serial
 
-localIP = ""
-localPort = 20006
+localIP = "192.168.0.111"
+localPort = 20001
 bufferSize = 1024
 
 dataDict = {}
-#arduino = serial.Serial('/dev/ttyACM0', 9600)
-SRC_PATH = os.path.dirname(os.path.abspath(__file__))
+arduino = serial.Serial('/dev/ttyACM0', 9600)
 
-with open(SRC_PATH+"/../common/dataformat.csv", "r") as dataformatfile:
+with open("dataformat.csv", "r") as dataformatfile:
     array = []
     offset = 0;
 
@@ -41,28 +40,18 @@ with open(SRC_PATH+"/../common/dataformat.csv", "r") as dataformatfile:
         else :
             print("error in keys",data )
             sys.exit(1)
-        #print(type,name)
+        print(type,name)
         newdata["type"] = type
         newdata["offset"] = newoffset
         newdata["length"] = newlength
         #newdata["value"] = 0
         dataDict[name] = newdata
-        #print(dataDict)
+        print(dataDict)
         array.append(line)
 #print(array)
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.bind(('', localPort))
-
-
-running = True
-clearTimer = 0
-
-outfile = open("output.csv","w")
-for key,item in dataDict.items():
-    outfile.write("\""+key+"\""+";")
-outfile.write("\n")
-
-while running:
+while True:
     message, address = s.recvfrom(1024)
 
     for key,item in dataDict.items():
@@ -75,12 +64,11 @@ while running:
     #(test,) = struct.unpack_from('f',message, offset=4*4)
     #print(type(test) )Boost
     for key,item in dataDict.items():
-        #print(key, item["value"] )
-        outfile.write(str(item["value"])+";")
-
-        continue
-    outfile.write("\n")
+        print(key, item["value"] )
         #print("%s;%.0f" % (key, item["value"]) )
     #print("%s;%.0f" % ("Boost", dataDict["Boost"]["value"]) ,end='', flush=True)
     #print("%s;%.0f" % ("TireTempFrontLeft", dataDict["TireTempFrontLeft"]["value"]) ,end='\n', flush=True)
     #print(dataDict["CurrentEngineRpm"]["value"], dataDict["LapNumber"]["value"] )
+    arduinoOut = str(int((dataDict["Boost"]["value"]+11)*10)).encode()
+    arduinoOut = arduinoOut + b"\n"
+    arduino.write(arduinoOut)

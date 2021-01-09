@@ -1,17 +1,30 @@
 import socket
 import struct
 import sys
-import os
+import serial
+
+import pygame
+import pygame.freetype
+
+# Pygame stuff
+pygame.init()
+screen = pygame.display.set_mode((800, 450))
+GAME_FONT = pygame.freetype.Font("LED.ttf", 24)
+
+clock = pygame.time.Clock()
 
 localIP = ""
-localPort = 20006
+localPort = 20002
 bufferSize = 1024
+
+
+maxRPM = 4500
+minRPM = 3800
 
 dataDict = {}
 #arduino = serial.Serial('/dev/ttyACM0', 9600)
-SRC_PATH = os.path.dirname(os.path.abspath(__file__))
 
-with open(SRC_PATH+"/../common/dataformat.csv", "r") as dataformatfile:
+with open("dataformat.csv", "r") as dataformatfile:
     array = []
     offset = 0;
 
@@ -41,27 +54,50 @@ with open(SRC_PATH+"/../common/dataformat.csv", "r") as dataformatfile:
         else :
             print("error in keys",data )
             sys.exit(1)
-        #print(type,name)
+        print(type,name)
         newdata["type"] = type
         newdata["offset"] = newoffset
         newdata["length"] = newlength
         #newdata["value"] = 0
         dataDict[name] = newdata
-        #print(dataDict)
+        print(dataDict)
         array.append(line)
 #print(array)
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.bind(('', localPort))
 
 
+prevRPM = 0
+prevPower = 0
+def calcShiftLight() :
+    global prevRPM
+    global prevPower
+    result = False
+    currentRpm = dataDict["CurrentEngineRpm"]["value"]
+    currentPower = dataDict["Power"]["value"]
+
+    if (prevRPM < currentRpm) :
+        if (prevPower > currentPower) :
+
+            result = True
+    prevRPM = currentRpm
+    prevPower = currentPower
+
+    return result
+
+def getRPMMinMax():
+    global minRPM, maxRPM
+    currentRpm = dataDict["CurrentEngineRpm"]["value"]
+    if currentRpm<minRPM:
+        color = (255, 0, 0)
+        return color
+    if currentRpm>maxRPM:
+        color = (0, 255, 255)
+        return color
+    color = (0,0,0)
+    return color
+
 running = True
-clearTimer = 0
-
-outfile = open("output.csv","w")
-for key,item in dataDict.items():
-    outfile.write("\""+key+"\""+";")
-outfile.write("\n")
-
 while running:
     message, address = s.recvfrom(1024)
 
@@ -76,11 +112,33 @@ while running:
     #print(type(test) )Boost
     for key,item in dataDict.items():
         #print(key, item["value"] )
-        outfile.write(str(item["value"])+";")
-
         continue
-    outfile.write("\n")
         #print("%s;%.0f" % (key, item["value"]) )
     #print("%s;%.0f" % ("Boost", dataDict["Boost"]["value"]) ,end='', flush=True)
     #print("%s;%.0f" % ("TireTempFrontLeft", dataDict["TireTempFrontLeft"]["value"]) ,end='\n', flush=True)
     #print(dataDict["CurrentEngineRpm"]["value"], dataDict["LapNumber"]["value"] )
+    arduinoOut = str(int((dataDict["Boost"]["value"]+11)*10)).encode()
+    arduinoOut = arduinoOut + b"\n"
+    #arduino.write(arduinoOut)
+
+    for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                    running = False
+
+
+    pressed = pygame.key.get_pressed()
+
+
+    screen.fill((0, 0, 0)) # Clear screen every frame
+
+    color = (255, 100, 0)
+    x1 = int(dataDict["CurrentEngineRpm"]["value"])/10
+    pygame.draw.rect(screen, color, pygame.Rect(0, 60, x1, 60))
+    GAME_FONT.render_to(screen, (40, 350), str(dataDict["Fuel"]["value"]), (128, 128, 128))
+    if calcShiftLight():
+        color = (0, 0, 200)
+        pygame.draw.rect(screen, color, pygame.Rect(0, 0, 1000, 60))
+    color = getRPMMinMax()
+    pygame.draw.rect(screen, color, pygame.Rect(0, 120, 1000, 120))
+
+    pygame.display.flip()

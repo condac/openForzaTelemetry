@@ -1,3 +1,7 @@
+import sys
+import os
+SRC_PATH = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(SRC_PATH+os.sep+'../common')
 import socket
 import struct
 import sys
@@ -29,7 +33,7 @@ bufferSize = 1024
 dataDict = {}
 #arduino = serial.Serial('/dev/ttyACM0', 9600)
 
-with open("../dataformat.csv", "r") as dataformatfile:
+with open(SRC_PATH+"/../common/dataformat.csv", "r") as dataformatfile:
     array = []
     offset = 0;
 

@@ -176,7 +176,7 @@ class UdpThread(threading.Thread):
 
         now = datetime.now()
 
-        current_time = now.strftime("%Y-%m-%d_%H:%M:%S")
+        current_time = now.strftime("%Y-%m-%d_%H%M%S")
 
         filename = "output"+current_time+".csv"
         print("creating file :", filename)

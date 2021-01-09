@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 import sys
-sys.path.append('../common')
+import os
+SRC_PATH = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(SRC_PATH+os.sep+'../common')
 import netLog
 from PyQt5 import QtWidgets, uic
 

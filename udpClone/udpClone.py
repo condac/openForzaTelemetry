@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 import sys
-sys.path.append('../common')
+import os
+SRC_PATH = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(SRC_PATH+os.sep+'../common')
+
 import netLog
 from PyQt5 import QtWidgets, uic
 
@@ -8,9 +11,9 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import  *
 netLog.speedLog("import klart qt")
-import sys
+
 import socket
-import os
+
 import traceback
 #from pathlib import Path
 #from functools import partial
