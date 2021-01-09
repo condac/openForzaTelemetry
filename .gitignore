@@ -1,3 +1,4 @@
 .buildozer
-*.csv
+/*.csv
 *.pyc
+python3x64
