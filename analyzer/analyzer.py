@@ -124,6 +124,8 @@ class Trend(QMainWindow):
             else:
                 self.car1["DistanceTraveled"][i] = self.car1["DistanceTraveled"][i] - lapStart1[int(self.car1["LapNumber"][i])]
                 self.car1["TimestampMS"][i] = self.car1["TimestampMS"][i] - lapStartTime1[int(self.car1["LapNumber"][i])]
+                if (self.car1["Steer"][i] > 127.0):
+                    self.car1["Steer"][i] = self.car1["Steer"][i]-255
         self.ui.comboBoxLaps1.addItems(laps1)
         self.laps1 = laps1
         #LapNumber Car 2
@@ -143,6 +145,8 @@ class Trend(QMainWindow):
         for i in range(len(self.car2["DistanceTraveled"])):
             self.car2["DistanceTraveled"][i] = self.car2["DistanceTraveled"][i] - lapStart2[int(self.car2["LapNumber"][i])] # Subtract start distance from all points
             self.car2["TimestampMS"][i] = self.car2["TimestampMS"][i] - lapStartTime2[int(self.car2["LapNumber"][i])]
+            if (self.car2["Steer"][i] > 127.0):
+                self.car2["Steer"][i] = self.car2["Steer"][i]-255
         self.ui.comboBoxLaps2.addItems(laps2)
         self.laps2 = laps2
         index = self.ui.comboBoxDataX.findText("DistanceTraveled", Qt.MatchFixedString)
@@ -191,14 +195,14 @@ class Trend(QMainWindow):
                     if int(l) == int(self.ui.comboBoxLaps1.currentText()):
                         xd = []
                         yd = []
-                        self.posx2 = []
-                        self.posy2 = []
+                        self.posx1 = []
+                        self.posy1 = []
                         posdata = []
                         for i in range(len(self.car1[box.text()])):
                             if int(self.car1["LapNumber"][i]) == int(l):
                                 xd.append(self.car1[self.ui.comboBoxDataX.currentText()][i])
                                 yd.append(self.car1[box.text()][i])
-                                pd = (self.car2["PositionX"][i], self.car2["PositionY"][i])
+                                pd = (self.car1["PositionX"][i], self.car1["PositionZ"][i])
                                 posdata.append(pd)
                                 #self.posx2.append(self.car2["PositionX"][i])
                                 #self.posy2.append(self.car2["PositionY"][i])
@@ -219,7 +223,7 @@ class Trend(QMainWindow):
                             if int(self.car2["LapNumber"][i]) == int(l):
                                 xd.append(self.car2[self.ui.comboBoxDataX.currentText()][i])
                                 yd.append(self.car2[box.text()][i])
-                                pd = (self.car2["PositionX"][i], self.car2["PositionY"][i])
+                                pd = (self.car2["PositionX"][i], self.car2["PositionZ"][i])
                                 posdata.append(pd)
                         xdata = xd
                         ydata = yd
@@ -238,7 +242,7 @@ class Trend(QMainWindow):
         #self.plot.addNew(name = self.ui.comboBoxDataY.currentText(), row=row, col=col, xdata=xdata, ydata=ydata)
         #print("add2 ", var)
         xdata = self.car1["PositionX"]
-        ydata = self.car1["PositionY"]
+        ydata = self.car1["PositionZ"]
         #print(xdata)
         #print(self.dataHeaders)
         for l in self.laps1:
@@ -248,7 +252,7 @@ class Trend(QMainWindow):
                 for i in range(len(self.car1[box.text()])):
                     if int(self.car1["LapNumber"][i]) == int(l):
                         xd.append(self.car1["PositionX"][i])
-                        yd.append(self.car1["PositionY"][i])
+                        yd.append(self.car1["PositionZ"][i])
                 xdata = xd
                 ydata = yd
                 #print(xdata)
@@ -256,7 +260,7 @@ class Trend(QMainWindow):
                 self.map.addNew(name = "Car1 Lap"+str(l), row=row+1, col=col, xdata=xdata, ydata=ydata, lock=False, color=1)
 
         xdata = self.car2["PositionX"]
-        ydata = self.car2["PositionY"]
+        ydata = self.car2["PositionZ"]
         for l in self.laps2:
             if int(l) == int(self.ui.comboBoxLaps2.currentText()):
                 xd = []
@@ -264,7 +268,7 @@ class Trend(QMainWindow):
                 for i in range(len(self.car1[box.text()])):
                     if int(self.car1["LapNumber"][i]) == int(l):
                         xd.append(self.car1["PositionX"][i])
-                        yd.append(self.car1["PositionY"][i])
+                        yd.append(self.car1["PositionZ"][i])
                 xdata = xd
                 ydata = yd
 
