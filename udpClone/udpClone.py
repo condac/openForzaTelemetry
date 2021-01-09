@@ -70,7 +70,7 @@ class udpClone(QMainWindow):
 
         self.ui.pushButton.clicked.connect(self.onUpdateButton)
 
-        self.ui.portIn.setText(self.settings["portIn"])
+        self.ui.portIn.setText(str(self.settings["portIn"]) )
 
         row = 3
         for i in range(NR_OUTPUTS):
@@ -135,7 +135,7 @@ class udpClone(QMainWindow):
             json.dump(self.settings, outfile, indent=3, sort_keys=True)
 
     def onUpdateButton(self):
-        portIn = self.ui.portIn.text()
+        portIn = int(self.ui.portIn.text())
         self.settings["portIn"] = portIn
         print("update ", portIn)
         ulist = []
