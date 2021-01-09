@@ -186,8 +186,11 @@ class UdpThread(threading.Thread):
         outfile.write("\n")
 
         while self.running:
-            message, address = s.recvfrom(1024)
-
+            try:
+                message, address = s.recvfrom(1024)
+            except socket.timeout:
+                print("no data")
+                continue
             for key,item in dataDict.items():
                 (value,) = struct.unpack_from(item["type"],message, offset=item["offset"])
                 item["value"] = value
