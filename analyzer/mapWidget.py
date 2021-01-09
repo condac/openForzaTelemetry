@@ -42,7 +42,7 @@ COLORS = [
 #pg.setConfigOption('background', 'w')
 #pg.setConfigOption('foreground', 'k')
 class PlotLine():
-    def __init__(self, parent, place=0, name ="noname", xdata=[], ydata=[], color=1, posdata=[]):
+    def __init__(self, parent, place=0, name ="noname", xdata=[], ydata=[], color=1):
         self.name =name
 
 
@@ -56,7 +56,6 @@ class PlotLine():
         self.curve = parent.p.plot(pen=color, name=name)
         self.dat = ydata
         self.xdat = xdata
-        self.posdata = posdata
         #print(ydata)
         self.maxLen = 1200*10 #1200 1 minut, 72000 en timme 1728000 24h
 
@@ -70,11 +69,13 @@ class PlotLine():
 
         parent.p.addItem(self.curvePoint)
 
-        self.text = pg.TextItem(self.name, anchor=(0.5, -1.0))
-        self.text.setParentItem(self.curvePoint)
+
 
         self.arrow = pg.ArrowItem(angle=90)
-        self.arrow.setParentItem(self.curvePoint)
+        parent.p.addItem(self.arrow)
+        self.text = pg.TextItem(self.name, anchor=(0.5, -1.0))
+        self.text.setParentItem(self.arrow)
+        #self.arrow.setParentItem(self.curvePoint)
         #print(4)
 
 class Plot():
@@ -93,72 +94,46 @@ class Plot():
                 self.p.setXLink(parent.firstPlot.p)
         #p.addItem(self.curvePoint)
         self.vLine = pg.InfiniteLine(angle=90, movable=False)
-        #self.hLine = pg.InfiniteLine(angle=0, movable=False)
+        self.hLine = pg.InfiniteLine(angle=0, movable=False)
         self.p.addItem(self.vLine, ignoreBounds=True)
+        self.p.addItem(self.hLine, ignoreBounds=True)
         #p.addItem(self.hLine, ignoreBounds=True)
         self.proxy = pg.SignalProxy(self.p.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved)
 
-    def addNewLine(self, place=0, name ="noname", xdata=[], ydata=[], color=1, posdata=[]):
+    def addNewLine(self, place=0, name ="noname", xdata=[], ydata=[], color=1):
 
-        plot = PlotLine(self, place=place, name=name, xdata=xdata, ydata=ydata, color=color, posdata=posdata)
+        plot = PlotLine(self, place=place, name=name, xdata=xdata, ydata=ydata, color=color)
 
         self.lineList.append(plot)
         self.parent.varList.append(name)
-    def moveMouse(self, index):
 
-        self.vLine.setPos(index)
-
-        title = ""
-        i = 0
-        for line in self.lineList:
-            a, b = self.p.legend.items[i]
-
-            try:
-                index2 = 0
-                for x in range(len(line.xdat)):
-                    if line.xdat[x] > index:
-                        index2 = x
-                        break
-                #print(index, index2)
-                #index2 = line.xdat.index(index)
-                #print(i, line, index2, line.posdata[index2])
-
-                (x,y) = line.posdata[index2]
-                #print("line",x, y)
-                self.parent.map.firstPlot.lineList[i].arrow.setPos(x, y)
-                #self.parent.map.firstPlot.lineList[i].curvePoint.setPos(x, y)
-                self.parent.map.firstPlot.vLine.setPos(x)
-                self.parent.map.firstPlot.hLine.setPos(y)
-                #print("arrow")
-
-            except ValueError as ex:
-                index2 = 0
-
-
-            if index2 > 0 and index2 < len(line.xdat)-2 and index2 < len(line.dat)-2:
-                try:
-                    line.curvePoint.setIndex(index2)
-
-                except:
-                    ba=0
-                line.text.setText('[%0.1f]' % (line.dat[index2]))
-                title = title + f"{line.name}={line.dat[index2]} "
-                b.setText(f"{line.name}={line.dat[index2]}")
-            i+=1
     def mouseMoved(self, evt):
-        #self.moveMouse(evt)
-
-
+        return
         pos = evt[0]  ## using signal proxy turns original arguments into a tuple
         vb = self.p.vb
         if self.p.sceneBoundingRect().contains(pos):
             mousePoint = vb.mapSceneToView(pos)
-            index = mousePoint.x()
-            for plot in self.parent.plotList:
-                #print(plot)
-                self.parent.plotList[plot].moveMouse(index)
-            return
-            
+            index = float(int(mousePoint.x()*20))/20
+            self.vLine.setPos(mousePoint.x())
+            title = ""
+            i = 0
+            for line in self.lineList:
+                a, b = self.p.legend.items[i]
+                i+=1
+                try:
+                    index2 = line.xdat.index(index)
+                except ValueError as ex:
+                    index2 = 0
+
+                if index2 > 0 and index2 < len(line.xdat)-2 and index2 < len(line.dat)-2:
+                    try:
+                        line.curvePoint.setIndex(index2)
+                    except:
+                        ba=0
+                    line.text.setText('[%0.1f]' % (line.dat[index2]))
+                    title = title + f"{line.name}={line.dat[index2]} "
+                    b.setText(f"{line.name}={line.dat[index2]}")
+
     def updateValues(self, resList):
         return
         for plot in self.lineList:
@@ -195,9 +170,8 @@ class Plot():
 
 
 class Graph(pg.GraphicsLayoutWidget ):
-    def __init__(self, map):
+    def __init__(self):
         super(Graph,self).__init__()
-        self.map = map
         netLog.speedLog("Graph init")
         self.axisItems = {'bottom': pg.DateAxisItem()}
         self.plotList = {}
@@ -240,7 +214,7 @@ class Graph(pg.GraphicsLayoutWidget ):
                 self.plotList[plot].legend.setLabelTextColor(self.themeFore)
             #self.setForeground("w")
 
-    def addNew(self, row=0, col=0, name="noname", xdata=[], ydata=[], title="noname", lock=True, color=1, posdata=[]):
+    def addNew(self, row=0, col=0, name="noname", xdata=[], ydata=[], title="noname", lock=True, color=1):
         #self.setConfigOption('background', 'k')
         #self.setBackground("k")
         #self.setConfigOption('foreground', 'w')
@@ -250,7 +224,7 @@ class Graph(pg.GraphicsLayoutWidget ):
             if (not self.firstPlot):
                 self.firstPlot = plot
             self.plotList[id] = plot
-        self.plotList[id].addNewLine(place=row+col, name=name, xdata=xdata, ydata=ydata, color=color, posdata=posdata)
+        self.plotList[id].addNewLine(place=row+col, name=name, xdata=xdata, ydata=ydata, color=color)
 
     def clearAll(self):
         print("clearAll")

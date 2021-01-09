@@ -20,6 +20,7 @@ import pyqtgraph as pg
 netLog.speedLog("import klart pyqtgraph")
 #Egna saker
 import graphWidget
+import mapWidget
 
 netLog.speedLog("import klart eget")
 netLog.speedLog("import klart nl")
@@ -95,88 +96,164 @@ class Trend(QMainWindow):
         self.ui.statusbar.setStyleSheet("QStatusBar{padding-left:8px;background:rgba(102,204,255,255);color:black;font-weight:bold;}");
         self.ui.statusbar.hide()
 
-        self.data, self.dataHeaders = readCSV("output.csv")
+        #self.data, self.dataHeaders = readCSV("output.csv")
+        self.car1, self.dataHeaders = readCSV("car1.csv")
+        self.car2, self.dataHeaders = readCSV("car2.csv")
         #print(self.data)
         self.ui.comboBoxDataX.addItems(self.dataHeaders)
         self.ui.comboBoxDataY.addItems(self.dataHeaders)
-        #LapNumber
-        laps = []
-        lapStart = []
-        for i in range(len(self.data["LapNumber"])):
-            if str(int(self.data["LapNumber"][i])) not in laps:
-                laps.append(str(int(self.data["LapNumber"][i])))
-                lapStart.append(self.data["DistanceTraveled"][i])
-        for i in range(len(self.data["DistanceTraveled"])):
-            self.data["DistanceTraveled"][i] = self.data["DistanceTraveled"][i] - lapStart[int(self.data["LapNumber"][i])]
-        self.ui.comboBoxLaps.addItems(laps)
-        self.laps = laps
+        #LapNumber Car 1
+        laps1 = []
+        lapStart1 = []
+        lapStartTime1 = []
+        for i in range(len(self.car1["LapNumber"])):
+            if str(int(self.car1["LapNumber"][i])) not in laps1:
+                laps1.append(str(int(self.car1["LapNumber"][i])))
+                lapStart1.append(self.car1["DistanceTraveled"][i])
+                lapStartTime1.append(self.car1["TimestampMS"][i])
+        for i in range(len(self.car1["DistanceTraveled"])):
+            self.car1["DistanceTraveled"][i] = self.car1["DistanceTraveled"][i] - lapStart1[int(self.car1["LapNumber"][i])]
+            self.car1["TimestampMS"][i] = self.car1["TimestampMS"][i] - lapStartTime1[int(self.car1["LapNumber"][i])]
+        self.ui.comboBoxLaps1.addItems(laps1)
+        self.laps1 = laps1
+        #LapNumber Car 2
+        laps2 = []
+        lapStart2 = []
+        lapStartTime2 = []
+        for i in range(len(self.car2["LapNumber"])):
+            if str(int(self.car2["LapNumber"][i])) not in laps2:
+                laps2.append(str(int(self.car2["LapNumber"][i])))
+                lapStart2.append(self.car2["DistanceTraveled"][i]) # Find where lap start
+                lapStartTime2.append(self.car2["TimestampMS"][i])
+        for i in range(len(self.car2["DistanceTraveled"])):
+            self.car2["DistanceTraveled"][i] = self.car2["DistanceTraveled"][i] - lapStart2[int(self.car2["LapNumber"][i])] # Subtract start distance from all points
+            self.car2["TimestampMS"][i] = self.car2["TimestampMS"][i] - lapStartTime2[int(self.car2["LapNumber"][i])]
+        self.ui.comboBoxLaps2.addItems(laps2)
+        self.laps2 = laps2
         index = self.ui.comboBoxDataX.findText("DistanceTraveled", Qt.MatchFixedString)
         if index >= 0:
              self.ui.comboBoxDataX.setCurrentIndex(index)
-        self.plot = graphWidget.Graph()
+        self.map = mapWidget.Graph()
+        self.plot = graphWidget.Graph(self.map)
+        splitter = QSplitter()
+        scroll = QScrollArea()
+        boxwidget = QWidget()
+        boxgrid = QGridLayout()
+        boxwidget.setLayout(boxgrid)
 
-        self.ui.verticalLayout.addWidget(self.plot)
-
-        self.ui.buttonAdd.clicked.connect(self.onButtonAdd)
 
         row = 3
         self.checkBoxes = []
         for heads in self.dataHeaders:
             checkbox = QCheckBox(heads)
-            self.ui.gridLayout_4.addWidget(checkbox, row, 0)
+            boxgrid.addWidget(checkbox, row, 0)
             self.checkBoxes.append(checkbox)
             row+=1
             #break
+        boxgrid.sizeHint()
+        boxwidget.sizeHint()
+        scroll.setWidget(boxwidget)
+        splitter.addWidget(scroll)
+        splitter.addWidget(self.plot)
+        splitter.addWidget(self.map)
+        self.ui.gridLayout.addWidget(splitter, 2, 0, 1, 15)
+
+
+        self.ui.buttonAdd.clicked.connect(self.onButtonAdd)
 
 
     def onButtonAdd(self):
         self.plot.clearAll()
+        self.map.clearAll()
         row = 0
         col = 0
         for box in self.checkBoxes:
             if box.isChecked():
                 row+=1
 
-                print("add ", box.text())
-                for l in self.laps:
-                    xd = []
-                    yd = []
-                    for i in range(len(self.data[box.text()])):
-                        if int(self.data["LapNumber"][i]) == int(l):
-                            xd.append(self.data[self.ui.comboBoxDataX.currentText()][i])
-                            yd.append(self.data[box.text()][i])
-                    xdata = xd
-                    ydata = yd
-                    #print(xdata)
-                    #print(self.dataHeaders)
-                    self.plot.addNew(name = box.text()+str(l), row=row, col=col, xdata=xdata, ydata=ydata, title=box.text())
+                print("add car1", box.text())
+                for l in self.laps1:
+                    if int(l) == int(self.ui.comboBoxLaps1.currentText()):
+                        xd = []
+                        yd = []
+                        self.posx2 = []
+                        self.posy2 = []
+                        posdata = []
+                        for i in range(len(self.car1[box.text()])):
+                            if int(self.car1["LapNumber"][i]) == int(l):
+                                xd.append(self.car1[self.ui.comboBoxDataX.currentText()][i])
+                                yd.append(self.car1[box.text()][i])
+                                pd = (self.car2["PositionX"][i], self.car2["PositionY"][i])
+                                posdata.append(pd)
+                                #self.posx2.append(self.car2["PositionX"][i])
+                                #self.posy2.append(self.car2["PositionY"][i])
+                        xdata = xd
+                        ydata = yd
+                        #print(xdata)
+                        #print(self.dataHeaders)
+                        self.plot.addNew(name = box.text()+str(l), row=row, col=col, xdata=xdata, ydata=ydata, title=box.text(), color=1, posdata = posdata)
+                print("add car2", box.text())
+                for l in self.laps2:
+                    if int(l) == int(self.ui.comboBoxLaps2.currentText()):
+                        xd = []
+                        yd = []
+                        self.posx2 = []
+                        self.posy2 = []
+                        posdata = []
+                        for i in range(len(self.car2[box.text()])):
+                            if int(self.car2["LapNumber"][i]) == int(l):
+                                xd.append(self.car2[self.ui.comboBoxDataX.currentText()][i])
+                                yd.append(self.car2[box.text()][i])
+                                pd = (self.car2["PositionX"][i], self.car2["PositionY"][i])
+                                posdata.append(pd)
+                        xdata = xd
+                        ydata = yd
+                        #print(xdata)
+                        #print(self.dataHeaders)
+                        self.plot.addNew(name = box.text()+str(l), row=row, col=col, xdata=xdata, ydata=ydata, title=box.text(), color=2, posdata = posdata)
 
         var = self.ui.lineEditVar.text()
         # row = self.ui.spinBoxRow.value()
         # col = self.ui.spinBoxCol.value()
         #print("add ", var)
-        xdata = self.data[self.ui.comboBoxDataX.currentText()]
-        ydata = self.data[self.ui.comboBoxDataY.currentText()]
+        # xdata = self.car1[self.ui.comboBoxDataX.currentText()]
+        # ydata = self.car1[self.ui.comboBoxDataY.currentText()]
         #print(xdata)
         #print(self.dataHeaders)
         #self.plot.addNew(name = self.ui.comboBoxDataY.currentText(), row=row, col=col, xdata=xdata, ydata=ydata)
         #print("add2 ", var)
-        xdata = self.data["PositionX"]
-        ydata = self.data["PositionY"]
+        xdata = self.car1["PositionX"]
+        ydata = self.car1["PositionY"]
         #print(xdata)
         #print(self.dataHeaders)
-        for l in self.laps:
-            xd = []
-            yd = []
-            for i in range(len(self.data[box.text()])):
-                if int(self.data["LapNumber"][i]) == int(l):
-                    xd.append(self.data["PositionX"][i])
-                    yd.append(self.data["PositionY"][i])
-            xdata = xd
-            ydata = yd
-            #print(xdata)
-            #print(self.dataHeaders)
-            self.plot.addNew(name = "Lap"+str(l), row=row+1, col=col, xdata=xdata, ydata=ydata, lock=False)
+        for l in self.laps1:
+            if int(l) == int(self.ui.comboBoxLaps1.currentText()):
+                xd = []
+                yd = []
+                for i in range(len(self.car1[box.text()])):
+                    if int(self.car1["LapNumber"][i]) == int(l):
+                        xd.append(self.car1["PositionX"][i])
+                        yd.append(self.car1["PositionY"][i])
+                xdata = xd
+                ydata = yd
+                #print(xdata)
+                #print(self.dataHeaders)
+                self.map.addNew(name = "Car1 Lap"+str(l), row=row+1, col=col, xdata=xdata, ydata=ydata, lock=False, color=1)
+
+        xdata = self.car2["PositionX"]
+        ydata = self.car2["PositionY"]
+        for l in self.laps2:
+            if int(l) == int(self.ui.comboBoxLaps2.currentText()):
+                xd = []
+                yd = []
+                for i in range(len(self.car1[box.text()])):
+                    if int(self.car1["LapNumber"][i]) == int(l):
+                        xd.append(self.car1["PositionX"][i])
+                        yd.append(self.car1["PositionY"][i])
+                xdata = xd
+                ydata = yd
+
+                self.map.addNew(name = "Car2 Lap"+str(l), row=row+1, col=col, xdata=xdata, ydata=ydata, lock=False, color=2)
 
         #self.plot.addNew(name = "karta", row=row+1, col=col, xdata=xdata, ydata=ydata, lock=False)
 
