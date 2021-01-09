@@ -11,25 +11,6 @@ import select
 localPort = 20002
 bufferSize = 1024
 
-class PongPaddle(Widget):
-    score = NumericProperty(0)
-
-    def bounce_ball(self, ball):
-        if self.collide_widget(ball):
-            vx, vy = ball.velocity
-            offset = (ball.center_y - self.center_y) / (self.height / 2)
-            bounced = Vector(-1 * vx, vy)
-            vel = bounced * 1.1
-            ball.velocity = vel.x, vel.y + offset
-
-
-class PongBall(Widget):
-    velocity_x = NumericProperty(0)
-    velocity_y = NumericProperty(0)
-    velocity = ReferenceListProperty(velocity_x, velocity_y)
-
-    def move(self):
-        self.pos = Vector(*self.velocity) + self.pos
 
 class BestGear(Widget):
     speedArray = []
@@ -182,7 +163,7 @@ class Bar(Widget):
 #                self.setColor(0.3,0.3,0.3)
         return result
 
-class PongGame(Widget):
+class OftGame(Widget):
     rpmobject = ObjectProperty(None)
     gearobject = ObjectProperty(None)
     fuelDTEobject = ObjectProperty(None)
@@ -312,7 +293,7 @@ class PongGame(Widget):
             out = f"[color=33ff33]{out:.3f}[/color]"
         return out
 
-    def serve_ball(self):
+    def setup(self):
         #self.value1 = ObjectProperty(None)
         x = 1
         self.ip = self.getIP()
@@ -388,13 +369,13 @@ class PongGame(Widget):
         return out
 
 
-class PongApp(App):
+class OftApp(App):
     def build(self):
-        game = PongGame()
-        game.serve_ball()
+        game = OftGame()
+        game.setup()
         Clock.schedule_interval(game.update, 1.0 / 60.0)
         return game
 
 
 if __name__ == '__main__':
-    PongApp().run()
+    OftApp().run()
