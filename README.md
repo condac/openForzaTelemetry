@@ -4,10 +4,12 @@ Open source telemetry app for UDP output from Forza 7
 ## Enable Forza to send telemetry to same computer
 in a windows command prompt with administrator rigths run:
  * CheckNetIsolation.exe LoopbackExempt -a -n=microsoft.apollobasegame_8wekyb3d8bbwe
-## Gateway
-The gateway module is capable of splitting the UDP data to multiple devices!
 
-For the moment you edit gateway.py and add more lines for your devices and change ip and port manualy
+## udpCloner
+This program allows you to split the telemetry to multiple programs. If you run everything on the same computer you can just check the boxes for the programs to be activated. You must press Update for things to start working. 
+
+## Analyzer
+Rename the .csv file from your recordning to car1.csv and car2.csv to compare the results.
 
 ## Android app
 The android app is built with Kivy framework, to build your self run: buildozer android debug deploy run  
