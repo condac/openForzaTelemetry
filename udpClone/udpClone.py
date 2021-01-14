@@ -28,6 +28,11 @@ SRC_PATH = os.path.dirname(os.path.abspath(__file__))
 
 NR_OUTPUTS = 8
 
+import time
+
+def current_milli_time():
+    return round(time.time() * 1000)
+
 class udpClone(QMainWindow):
     def __init__(self):
         super(udpClone,self).__init__()
@@ -127,8 +132,11 @@ class udpClone(QMainWindow):
             self.ui.labelPackets.setStyleSheet("background-color: lightgreen")
         else:
             self.ui.labelPackets.setStyleSheet("background-color: red")
+        rate = self.udpThread.counter - self.packets
+        rate = rate *2
         self.packets = self.udpThread.counter
         self.ui.labelPackets.setText(""+str(self.packets))
+        self.ui.labelRate.setText(""+str(rate)+"/s")
 
     def saveSettings(self):
         with open(self.settingsfilename, 'w') as outfile:
