@@ -255,7 +255,7 @@ class OftGame(Widget):
             self.deltaCounter = 0
             self.deltaDistOff = 0
             self.deltaTimeOff = 0
-            self.deltaBestLap = 9999999999999
+            #self.deltaBestLap = 9999999999999
             self.lastLapNr = 0
 
         if self.lastLapNr<self.dataDict["LapNumber"]["value"]:
@@ -263,24 +263,25 @@ class OftGame(Widget):
             print("Lap", self.dataDict["LapNumber"]["value"])
 
             if (lapNr>=1):
-                laptime = self.dataDict["TimestampMS"]["value"] - self.deltaTimeOff
-                if laptime < self.deltaBestLap and laptime > (1000*60):
-                    print("new best", laptime)
-                    self.deltaBestLap = laptime
-                    self.bestDeltas = self.currentDeltas.copy()
+                laptime = self.dataDict["LastLap"]["value"]# - self.deltaTimeOff
+                if laptime > (30) :
+                    if self.dataDict["LastLap"]["value"] == self.dataDict["BestLap"]["value"]:
+                        print("new best", laptime)
+                        self.deltaBestLap = laptime
+                        self.bestDeltas = self.currentDeltas.copy()
                 else:
                     print("old best", self.deltaBestLap, laptime)
             self.deltaDistOff = self.dataDict["DistanceTraveled"]["value"]
-            self.deltaTimeOff = self.dataDict["TimestampMS"]["value"]
+            self.deltaTimeOff = 0# self.dataDict["CurrentLap"]["value"]
             self.lastLapNr = self.dataDict["LapNumber"]["value"]
         else :
             index = int((self.dataDict["DistanceTraveled"]["value"] - self.deltaDistOff)/10)
             if index != self.deltaCounter:
                 self.deltaCounter = index
-                time = self.dataDict["TimestampMS"]["value"] - self.deltaTimeOff
+                time = self.dataDict["CurrentLap"]["value"] - self.deltaTimeOff
                 if (index < len(self.currentDeltas)-1):
                     self.currentDeltas[index] = time
-                    out = (self.currentDeltas[index] - self.bestDeltas[index])/1000
+                    out = (self.currentDeltas[index] - self.bestDeltas[index])
 
                 else :
                     out = 0.0
