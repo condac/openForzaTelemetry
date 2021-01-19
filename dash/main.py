@@ -301,6 +301,11 @@ class OftGame(Widget):
 
     def update(self, dt):
         message, address = self.s.recvfrom(1024)
+        ready = select.select([self.s], [], [], 0.001)
+        while ready[0]:
+            #print("flushing network")
+            message, address = self.s.recvfrom(1024)
+            ready = select.select([self.s], [], [], 0.001)
         for key,item in self.dataDict.items():
             (value,) = struct.unpack_from(item["type"],message, offset=item["offset"])
             item["value"] = value
@@ -332,14 +337,10 @@ class OftGame(Widget):
             self.boostGaugeObject.setBoost(self.dataDict)
             #self.boostObject.setDelta(delta)
 
-        ready = select.select([self.s], [], [], 0.001)
-        if ready[0]:
-            #print("flushing network")
-            message, address = self.s.recvfrom(1024)
-            ready = select.select([self.s], [], [], 0.001)
-            if ready[0]:
+
+            #if ready[0]:
                 #print("double flushing network")
-                message, address = self.s.recvfrom(1024)
+                #message, address = self.s.recvfrom(1024)
 
 
     def f2c(self,Fahrenheit):
