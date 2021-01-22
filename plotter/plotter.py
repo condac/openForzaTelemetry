@@ -5,6 +5,7 @@ sys.path.append(SRC_PATH+os.sep+'../common')
 import socket
 import struct
 import sys
+import select
 
 import pygame
 import pygame.freetype
@@ -97,6 +98,9 @@ def calcShiftLight() :
 def speed2X(inSpeed) :
     global screen_x
     global maxSpeed
+    if inSpeed > maxSpeed:
+        maxSpeed += 5
+        print("increasing maxSpeed",maxSpeed )
     multi = inSpeed/maxSpeed
     x = screen_x*multi
     return x
@@ -115,8 +119,12 @@ def hp2Y(inAxx) :
         inAxx = 0
     global screen_y
     global maxPower
+
     screen = screen_y/2
     maxAxx = maxPower*1000
+    if inAxx > maxAxx:
+        maxPower += 5
+        print("increasing maxPower",maxPower )
     multi = inAxx/maxAxx
     y = screen*multi
     y = screen - y
@@ -127,6 +135,9 @@ def nm2Y(inAxx) :
         inAxx = 0
     global screen_y
     global maxTorque
+    if inAxx > maxTorque:
+        maxTorque += 5
+        print("increasing maxTorque",maxTorque )
     screen = screen_y/2
     maxAxx = maxTorque
     multi = inAxx/maxAxx
@@ -199,7 +210,13 @@ def getGearColor(inGear):
 running = True
 clearTimer = 0
 while running:
+    #message, address = s.recvfrom(1024)
     message, address = s.recvfrom(1024)
+    ready = select.select([s], [], [], 0.001)
+    while ready[0]:
+        #print("flushing network")
+        message, address = s.recvfrom(1024)
+        ready = select.select([s], [], [], 0.001)
 
     for key,item in dataDict.items():
         (value,) = struct.unpack_from(item["type"],message, offset=item["offset"])

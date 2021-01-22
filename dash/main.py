@@ -7,7 +7,7 @@ from kivy.clock import Clock
 import socket
 import struct
 import select
-
+from datetime import datetime
 localPort = 20002
 bufferSize = 1024
 
@@ -206,6 +206,14 @@ class OftGame(Widget):
         currentDeltas.append(0)
         bestDeltas.append(0)
 
+    now = datetime.now()
+
+    current_time = now.strftime("%Y-%m-%d_%H%M%S")
+
+    filename = "laptimes"+current_time+".txt"
+    print("creating file :", filename)
+    outfile = open(filename,"w")
+
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind(('', localPort))
     #s.setblocking(0)
@@ -252,6 +260,7 @@ class OftGame(Widget):
         out = 0.0
         if (self.lastLapNr>self.dataDict["LapNumber"]["value"]):
             print("new race")
+            self.outfile.write("new race" + "\n")
             self.deltaCounter = 0
             self.deltaDistOff = 0
             self.deltaTimeOff = 0
@@ -261,9 +270,12 @@ class OftGame(Widget):
         if self.lastLapNr<self.dataDict["LapNumber"]["value"]:
             lapNr = self.dataDict["LapNumber"]["value"]
             print("Lap", self.dataDict["LapNumber"]["value"])
+            self.outfile.write(str(self.dataDict["LastLap"]["value"]) + "\n")
+            self.outfile.flush()
 
             if (lapNr>=1):
                 laptime = self.dataDict["LastLap"]["value"]# - self.deltaTimeOff
+
                 if laptime > (30) :
                     if self.dataDict["LastLap"]["value"] == self.dataDict["BestLap"]["value"]:
                         print("new best", laptime)
