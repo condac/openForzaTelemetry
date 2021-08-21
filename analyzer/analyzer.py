@@ -265,10 +265,10 @@ class Trend(QMainWindow):
             if int(l) == int(self.ui.comboBoxLaps2.currentText()):
                 xd = []
                 yd = []
-                for i in range(len(self.car1[box.text()])):
-                    if int(self.car1["LapNumber"][i]) == int(l):
-                        xd.append(self.car1["PositionX"][i])
-                        yd.append(self.car1["PositionZ"][i])
+                for i in range(len(self.car2[box.text()])):
+                    if int(self.car2["LapNumber"][i]) == int(l):
+                        xd.append(self.car2["PositionX"][i])
+                        yd.append(self.car2["PositionZ"][i])
                 xdata = xd
                 ydata = yd
 
